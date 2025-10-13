@@ -1,4 +1,5 @@
 import csv
+import unittest
 
 def penguin_pullinfo(penguin_csv):
     rows = []
@@ -45,10 +46,22 @@ def bill_average_depth(rows, species_name):
     
     return [{"species": species_name, "average_bill_depth": avg, "count": count}]
 
+class TestPenguinFunctions(unittest.TestCase):
 
-penguin_csv = r"C:/Users/User/Desktop/SI 201/Project 1 Checkpoint/penguins.csv"
-data = penguin_pullinfo(penguin_csv)
-adelie_avg = bill_average_length(data, "Adelie")
-print("Adelie avg bill length:", adelie_avg)
-gentoo_avg = bill_average_length(data, "Gentoo")
-print("Gentoo avg bill length:", gentoo_avg)
+    def setUp(self):
+        
+        self.rows = [
+            {"species": "Adelie", "bill_length_mm": "39.1", "bill_depth_mm": "18.7"},
+            {"species": "Adelie", "bill_length_mm": "40.0", "bill_depth_mm": "19.0"},
+            {"species": "Adelie", "bill_length_mm": "NA",   "bill_depth_mm": "NA"},
+            {"species": "Gentoo", "bill_length_mm": "50.0", "bill_depth_mm": "14.0"}
+        ]
+
+    
+    def test_bill_average_length_general(self):
+        avg = bill_average_length(self.rows, "Adelie")[0]['average_bill_length']
+        self.assertEqual(avg, (39.1 + 40.0) / 2) 
+
+
+if __name__ == "__main__":
+    unittest.main()
