@@ -20,9 +20,12 @@ def bill_average_length(rows, species_name): #changed to bill, since I thought i
                 count += 1
     
     if count > 0:
-        return total / count
+        avg = total / count
     else:
-        return None
+        avg = None
+    
+    return [{"species": species_name, "average_bill_length": avg, "count": count}]
+
     
 def bill_average_depth(rows, species_name):
     total = 0.0
@@ -36,9 +39,11 @@ def bill_average_depth(rows, species_name):
                 count += 1
     
     if count > 0:
-        return total / count
+        avg = total / count
     else:
-        return None
+        avg = None
+    
+    return [{"species": species_name, "average_bill_depth": avg, "count": count}]
 
 
 penguin_csv = r"C:/Users/User/Desktop/SI 201/Project 1 Checkpoint/penguins.csv"
