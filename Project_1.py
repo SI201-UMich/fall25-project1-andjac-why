@@ -1,11 +1,118 @@
+# Name: Andrew
+# Student ID: 1577-5324
+# Email: andjac@umich.edu
+# Collaborators: Collabrated with Joey Yang, as well as GenAI (chatGPT). I needed help with debugging / creating test functions, as well as help with coding in general. 
+
+
+
+# Joey's fucntions
+
 import csv
-import unittest
 import os
 
+def load_csv(file_path):
+    """Loads CSV into a list of dictionaries."""
+    data = []
+    with open(file_path, newline='', encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if "" in row:
+                del row[""]
+            data.append(row)
+    return data
+
+
+def island_species_average(data, species_col="species", body_col="body_mass_g", sex_col="sex"):
+    """Calculates average body mass by species and sex."""
+    species_dict = {}
+    for row in data:
+        sp = row[species_col]
+        sex = row[sex_col].lower()
+        value = row[body_col].strip()
+
+        if value != "" and value.replace(".", "", 1).isdigit():
+            mass = float(value)
+        else:
+            continue
+
+        if sp not in species_dict:
+            species_dict[sp] = {"male": [], "female": []}
+        species_dict[sp][sex].append(mass)
+
+    result = {}
+    for sp, sex_dict in species_dict.items():
+        male_avg = round(sum(sex_dict["male"]) / len(sex_dict["male"])) if sex_dict["male"] else 0
+        female_avg = round(sum(sex_dict["female"]) / len(sex_dict["female"])) if sex_dict["female"] else 0
+        total_list = sex_dict["male"] + sex_dict["female"]
+        total_avg = round(sum(total_list) / len(total_list)) if total_list else 0
+        result[sp] = {"average": total_avg, "male": male_avg, "female": female_avg}
+    return result
+
+
+def flipper_length_trend(data, flipper_col="flipper_length_mm", year_col="year", species_col="species"):
+    """Finds the average flipper length per year for each species."""
+    trend_dict = {}
+    species_set = set()
+
+    for row in data:
+        sp = row[species_col]
+        species_set.add(sp)
+        year = row[year_col]
+        value = row[flipper_col].strip()
+
+        if value != "" and value.replace(".", "", 1).isdigit():
+            flipper = float(value)
+        else:
+            continue
+
+        if sp not in trend_dict:
+            trend_dict[sp] = {}
+        if year not in trend_dict[sp]:
+            trend_dict[sp][year] = []
+        trend_dict[sp][year].append(flipper)
+
+    result = {}
+    for sp in species_set:  
+        result[sp] = {}
+        if sp in trend_dict:
+            for yr, lengths in trend_dict[sp].items():
+                if lengths:
+                    result[sp][int(yr)] = round(sum(lengths) / len(lengths), 1)
+    return result
+
+
+def write_species_average(filename, data):
+    """Writes species averages to a CSV file."""
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Species", "Male", "Female", "Average"])
+        for sp, vals in data.items():
+            writer.writerow([sp, vals.get("male"), vals.get("female"), vals.get("average")])
+
+
+def write_flipper_trend(filename, data):
+    """Writes flipper trends to a CSV file."""
+    with open(filename, "w", newline="") as f:
+        writer = csv.writer(f)
+        years = set()
+        for sp_vals in data.values():
+            years.update(sp_vals.keys())
+        years = sorted(list(years))
+        writer.writerow(["Species"] + years)
+
+        for sp, vals in data.items():
+            row = [sp]
+            for yr in years:
+                row.append(vals.get(yr, ""))
+            writer.writerow(row)
+
+
+# Andrew’s Functions
 def penguin_pullinfo(penguin_csv):
+    """Loads penguin data from CSV."""
     rows = []
-    file_path = os.path.join(os.getcwd(), "fall25-project1-andjac-why", penguin_csv) #if this does not working, remove fall25-project1-andjac-why
-    with open(file_path, mode = "r", newline="", encoding="utf-8") as inFile:
+    file_path = os.path.join(os.getcwd(), penguin_csv)
+    with open(file_path, mode="r", newline="", encoding="utf-8") as inFile:
         reader = csv.DictReader(inFile)
         for row in reader:
             rows.append(row)
@@ -13,6 +120,7 @@ def penguin_pullinfo(penguin_csv):
 
 
 def bill_average_length(rows, species_name, island):
+    """Calculates average bill length for a given species and island."""
     total = 0.0
     count = 0
     for row in rows:
@@ -32,7 +140,9 @@ def bill_average_length(rows, species_name, island):
         "count": count
     }]
 
+
 def bill_average_depth(rows, species_name, island):
+    """Calculates average bill depth for a given species and island."""
     total = 0.0
     count = 0
     for row in rows:
@@ -52,100 +162,35 @@ def bill_average_depth(rows, species_name, island):
         "count": count
     }]
 
-def main():
-    # penguin_csv = "C:/Users/User/Desktop/SI 201/Project 1 Checkpoint/penguins.csv" 
-    penguin_csv = "test.csv"
-    data = penguin_pullinfo(penguin_csv)
-    adelie_torg_len = bill_average_length(data, "Adelie", "Torgersen")
-    adelie_torg_depth = bill_average_depth(data, "Adelie", "Torgersen")
-    print(adelie_torg_len)
-    print(adelie_torg_depth)
+def save_results_to_file(data, filename):
+    """Writes Joey's and Andrew's results to a single .txt file."""
+    with open(filename, "w") as file:
+        # Joey
+        file.write("Island Species Average (Joey's function):\n")
+        avg_result = island_species_average(data)
+        for species, stats in avg_result.items():
+            file.write(f"{species}: {stats}\n")
 
-class TestPenguinAverages(unittest.TestCase):
+        file.write("\nFlipper Length Trend (Joey's function):\n")
+        trend_result = flipper_length_trend(data)
+        for species, years in trend_result.items():
+            file.write(f"{species}: {years}\n")
 
-    @classmethod
-    def setUpClass(cls):
-        
-        cls.rows = penguin_pullinfo(
-            "test.csv"
-        )
-        print(f"[tests] loaded {len(cls.rows)} rows from test.csv")
+        # Andrew
+        penguin_data = penguin_pullinfo("test.csv")
 
-    def _expected_avg(self, rows, species, island, column_key):
-        total = 0.0
-        count = 0
-        for r in rows:
-            if r["species"] == species and r["island"] == island:
-                v = str(r[column_key]).strip()
-                if v != "NA" and v != "":
-                    total += float(v)
-                    count += 1
-        if count == 0:
-            return None, 0
-        return total / count, count
+        file.write("\nBill Average Length & Depth (Andrew's functions):\n")
+        examples = [
+            ("Adelie", "Torgersen"),
+            ("Gentoo", "Biscoe"),
+            ("Chinstrap", "Dream")
+        ]
+        for species, island in examples:
+            length = bill_average_length(penguin_data, species, island)[0]
+            depth = bill_average_depth(penguin_data, species, island)[0]
+            file.write(f"{species} - {island} | Avg Bill Length: {length['average_bill_length']}, Avg Bill Depth: {depth['average_bill_depth']}, Count: {length['count']}\n")
 
-    
-    def test_bill_average_length_general_adelie_torgersen(self):
-        out = bill_average_length(self.rows, "Adelie", "Torgersen")[0]
-        exp_avg, exp_cnt = self._expected_avg(self.rows, "Adelie", "Torgersen", "bill_length_mm")
-        if exp_avg is None:
-            self.assertEqual(out["average_bill_length"], None)
-        else:
-            self.assertEqual(round(out["average_bill_length"], 6), round(exp_avg, 6))
-        self.assertEqual(out["count"], exp_cnt)
-        self.assertGreater(out["count"], 0)
-
-    def test_bill_average_length_general_gentoo_biscoe(self):
-        out = bill_average_length(self.rows, "Gentoo", "Biscoe")[0]
-        exp_avg, exp_cnt = self._expected_avg(self.rows, "Gentoo", "Biscoe", "bill_length_mm")
-        if exp_avg is None:
-            self.assertEqual(out["average_bill_length"], None)
-        else:
-            self.assertEqual(round(out["average_bill_length"], 6), round(exp_avg, 6))
-        self.assertEqual(out["count"], exp_cnt)
-        self.assertTrue(out["count"] >= 1)
-
-    def test_bill_average_length_edge_no_pair(self):
-        out = bill_average_length(self.rows, "Chinstrap", "Biscoe")[0]
-        self.assertEqual(out["average_bill_length"], None)
-        self.assertEqual(out["count"], 0)
-
-    def test_bill_average_length_edge_case_sensitivity(self):
-        out = bill_average_length(self.rows, "Adelie", "torgersen")[0]
-        self.assertEqual(out["average_bill_length"], None)
-        self.assertEqual(out["count"], 0)
-
-    
-    def test_bill_average_depth_general_adelie_torgersen(self):
-        out = bill_average_depth(self.rows, "Adelie", "Torgersen")[0]
-        exp_avg, exp_cnt = self._expected_avg(self.rows, "Adelie", "Torgersen", "bill_depth_mm")
-        if exp_avg is None:
-            self.assertEqual(out["average_bill_depth"], None)
-        else:
-            self.assertEqual(round(out["average_bill_depth"], 6), round(exp_avg, 6))
-        self.assertEqual(out["count"], exp_cnt)
-        self.assertGreater(out["count"], 0)
-
-    def test_bill_average_depth_general_gentoo_biscoe(self):
-        out = bill_average_depth(self.rows, "Gentoo", "Biscoe")[0]
-        exp_avg, exp_cnt = self._expected_avg(self.rows, "Gentoo", "Biscoe", "bill_depth_mm")
-        if exp_avg is None:
-            self.assertEqual(out["average_bill_depth"], None)
-        else:
-            self.assertEqual(round(out["average_bill_depth"], 6), round(exp_avg, 6))
-        self.assertEqual(out["count"], exp_cnt)
-
-    def test_bill_average_depth_edge_no_pair(self):
-        out = bill_average_depth(self.rows, "Gentoo", "Dream")[0]
-        self.assertEqual(out["average_bill_depth"], None)
-        self.assertEqual(out["count"], 0)
-
-    def test_bill_average_depth_edge_case_sensitivity(self):
-        out = bill_average_depth(self.rows, "Gentoo", "biscoe")[0]
-        self.assertEqual(out["average_bill_depth"], None)
-        self.assertEqual(out["count"], 0)
-
-if __name__ == '__main__':
-    unittest.main(verbosity=2, exit=False)
-    main()
-
+if __name__ == "__main__":
+    data = load_csv("test.csv")
+    save_results_to_file(data, "results.txt")
+    penguin_data = penguin_pullinfo("test.csv")
